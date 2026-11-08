@@ -1,6 +1,6 @@
 #show link: set text(fill: blue)
 
-#let title = "Pending"
+#let title = "An analysis of skippable song features."
 #let authors = "Gabe Gonzalez, Debra Ritter, Noah Schiro, Franco Valencia, Elaine Zhang"
 
 #set page(paper: "us-letter", margin: (x: 0.85in, top: 0.5in, bottom: 0.7in))
