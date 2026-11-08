@@ -1,0 +1,4 @@
+# proposal artifacts
+*.pdf
+
+__pycache__/
