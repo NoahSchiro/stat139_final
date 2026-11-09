@@ -58,9 +58,12 @@ jobs:
 
   gloc:
     name: gloc churn
+    # github.base_ref is only defined on pull_request events; on push it would be
+    # empty and --base "origin/" would be an invalid argument.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      # fetch-depth: 0 so gloc can compute the merge-base against origin/main.
+      # fetch-depth: 0 so gloc can compute the merge-base against the PR's base branch.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -76,13 +79,13 @@ jobs:
       - name: Build the report
         run: |
           set +e
-          ./gloc --base "origin/${{ github.base_ref }}" --style markdown \
+          gloc --base "origin/${{ github.base_ref }}" --style markdown \
             --depth 1 --max-src 1000 \
             > report.md 2> limits.txt
           status=$?
           set -e
           if [ "$status" -ge 2 ]; then
-            cat limits.txt >&2
+            cat limits.txt 2>/dev/null >&2
             exit 1
           fi
           {
@@ -96,8 +99,26 @@ jobs:
               echo "> This PR exceeds the churn limits. Consider scoping it down or splitting it into smaller PRs."
               echo
               echo '```'
-              cat limits.txt
+              cat limits.txt 2>/dev/null
               echo '```'
             else
               echo "✅ Within churn limits."
             fi
+          } > comment.md
+
+      - name: Post the report
+        # Fork PRs get a read-only token and cannot comment; the report is
+        # still visible in this run's log.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number="${{ github.event.pull_request.number }}"
+          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$number/comments" \
+            --jq '.[] | select(.body | startswith("<!-- gloc report:")) | .id' | head -1)
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" \
+              -F body=@comment.md > /dev/null
+          else
+            gh pr comment "$number" --body-file comment.md
+          fi
