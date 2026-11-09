@@ -1,10 +1,12 @@
 """Entry point for the EDA."""
 
+from argparse import Namespace
 from collections.abc import Callable
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.figure import Figure
 
 from ..clean import clean
 
@@ -22,7 +24,7 @@ def load_analysis_table(path: Path) -> pd.DataFrame:
     return df
 
 
-def save_fig(fig: plt.Figure, name: str, assets_dir: Path = Path("assets")) -> Path:
+def save_fig(fig: Figure, name: str, assets_dir: Path = Path("assets")) -> Path:
     """Save a figure to <assets_dir>/<name>.png."""
     assets_dir.mkdir(parents=True, exist_ok=True)
     path = assets_dir / f"{name}.png"
@@ -52,9 +54,8 @@ def pct(x: float) -> str:
 from src.eda import context, features, outcome, popularity, quality, session
 
 
-def eda(args) -> None:
-    """Run all analyses (or the comma-separated subset in `analyses`),
-    printing results and saving figures to assets/."""
+def eda(args: Namespace) -> None:
+    """Run all analyses, printing results and saving figures to assets/."""
     registry: dict[int, Callable[[pd.DataFrame], None]] = {
         1: outcome.skip_flag_structure,
         2: outcome.listening_depth,
