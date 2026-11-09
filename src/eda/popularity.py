@@ -1,4 +1,5 @@
 """EDA on track popularity, recency, and musical attributes."""
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -12,7 +13,9 @@ def popularity_effect(df: pd.DataFrame) -> None:
     rate = df.groupby(bins, observed=True)["skip_2"].mean()
     print(f"  popularity range: [{popularity.min():.2f}, {popularity.max():.2f}]")
     print(f"  correlation with skip_2: {popularity.corr(df['skip_2']):.4f}")
-    print(f"  skip rate, bottom vs top decile: {pct(rate.iloc[0])} vs {pct(rate.iloc[-1])}")
+    print(
+        f"  skip rate, bottom vs top decile: {pct(rate.iloc[0])} vs {pct(rate.iloc[-1])}"
+    )
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].hist(popularity, bins=40)
@@ -51,9 +54,13 @@ def key_mode_signature(df: pd.DataFrame) -> None:
     by_key = df.groupby("key")["skip_2"].mean()
     by_mode = df.groupby("mode", observed=True)["skip_2"].mean()
     by_signature = df.groupby("time_signature", observed=True)["skip_2"].mean()
-    print(f"  key rate spread: {pct(by_key.max() - by_key.min())} (max {pct(by_key.max())}, min {pct(by_key.min())})")
+    print(
+        f"  key rate spread: {pct(by_key.max() - by_key.min())} (max {pct(by_key.max())}, min {pct(by_key.min())})"
+    )
     print(f"  mode rates: {', '.join(f'{m}: {pct(r)}' for m, r in by_mode.items())}")
-    print(f"  time_signature rates: {', '.join(f'{s}: {pct(r)} (n={int((df['time_signature'] == s).sum()):,})' for s, r in by_signature.items())}")
+    print(
+        f"  time_signature rates: {', '.join(f'{s}: {pct(r)} (n={int((df["time_signature"] == s).sum()):,})' for s, r in by_signature.items())}"
+    )
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].bar(by_key.index, by_key.values)

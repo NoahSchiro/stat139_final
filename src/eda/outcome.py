@@ -1,4 +1,5 @@
 """EDA on the skip outcome itself: flag structure and listening depth."""
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -12,11 +13,15 @@ def skip_flag_structure(df: pd.DataFrame) -> None:
     violations = {
         "skip_1 without skip_2": int((df["skip_1"] & ~df["skip_2"]).sum()),
         "skip_2 without skip_3": int((df["skip_2"] & ~df["skip_3"]).sum()),
-        "skip_3 and not_skipped both true": int((df["skip_3"] & df["not_skipped"]).sum()),
+        "skip_3 and not_skipped both true": int(
+            (df["skip_3"] & df["not_skipped"]).sum()
+        ),
     }
     print("  nesting violations:", violations)
     unlabeled = int((~df[list(skip_flags)].any(axis=1)).sum())
-    print(f"  plays with no outcome flag set (unlabeled): {unlabeled:,} ({pct(unlabeled / len(df))})")
+    print(
+        f"  plays with no outcome flag set (unlabeled): {unlabeled:,} ({pct(unlabeled / len(df))})"
+    )
     flags = list(skip_flags)
     patterns = df.groupby(flags, observed=True).size()
     print("  observed (skip_1, skip_2, skip_3, not_skipped) patterns:")
@@ -33,10 +38,15 @@ def skip_flag_structure(df: pd.DataFrame) -> None:
 def listening_depth(df: pd.DataFrame) -> None:
     """How deep into a track do listeners get, i.e. what is the distribution of skip_class?"""
     dist = df["skip_class"].value_counts().sort_index()
-    print("  skip_class distribution:", {str(k): pct(v / len(df)) for k, v in dist.items()})
+    print(
+        "  skip_class distribution:",
+        {str(k): pct(v / len(df)) for k, v in dist.items()},
+    )
 
     fig, ax = plt.subplots(figsize=(7, 4))
-    ax.bar([str(k) for k in dist.index], dist.values / len(df))
+    ax.bar([str(k) for k in dist.index], dist.to_numpy() / len(df))
     ax.set_ylabel("share of plays")
-    ax.set_title("Listening depth per play (most severe skip flag; completed = no skip)")
+    ax.set_title(
+        "Listening depth per play (most severe skip flag; completed = no skip)"
+    )
     save_fig(fig, "02_skip_class_distribution")

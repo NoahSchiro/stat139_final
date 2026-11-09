@@ -1,4 +1,8 @@
 """EDA on data quality and track coverage."""
+
+from collections.abc import Iterator
+from typing import cast
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -14,12 +18,19 @@ def data_quality_checks(df: pd.DataFrame) -> None:
 
     tracks = df.drop_duplicates("track_id_clean")
     missing_tracks = tracks[["tempo", "loudness", "time_signature"]].isna().sum()
-    print("  missing values per unique track:", {c: int(v) for c, v in missing_tracks.items()})
-    print(f"  plays with no outcome flag set (unlabeled skip_class): {int((df['skip_class'] == 'unknown').sum()):,}")
+    print(
+        "  missing values per unique track:",
+        {c: int(v) for c, v in missing_tracks.items()},
+    )
+    print(
+        f"  plays with no outcome flag set (unlabeled skip_class): {int((df['skip_class'] == 'unknown').sum()):,}"
+    )
 
     duration = df["duration"]
     low, high = duration.quantile([0.01, 0.99])
-    print(f"  duration percentiles: 1% {low:.0f}s, median {duration.median():.0f}s, 99% {high:.0f}s, max {duration.max():.0f}s")
+    print(
+        f"  duration percentiles: 1% {low:.0f}s, median {duration.median():.0f}s, 99% {high:.0f}s, max {duration.max():.0f}s"
+    )
     print(f"  plays longer than 10 minutes: {int((duration > 600).sum()):,}")
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -46,10 +57,12 @@ def track_reuse(df: pd.DataFrame) -> None:
     rate = df.groupby(quartile, observed=True)["skip_2"].mean()
 
     print(f"  unique tracks in the log: {len(per_track):,}")
-    print(f"  average sessions per track: {per_track.mean():.2f}; tracks in only one session: {pct((per_track == 1).mean())}")
+    print(
+        f"  average sessions per track: {per_track.mean():.2f}; tracks in only one session: {pct((per_track == 1).mean())}"
+    )
     print(f"  max sessions containing one track: {int(per_track.max())}")
     print("  skip rate by per-track reuse quartile:")
-    for interval, r in rate.items():
+    for interval, r in cast("Iterator[tuple[pd.Interval, float]]", rate.items()):
         print(f"    {int(interval.left)}-{int(interval.right)} sessions: {pct(r)}")
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))

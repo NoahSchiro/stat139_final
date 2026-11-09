@@ -10,6 +10,7 @@ Cleaning policy (value-level fixes; no rows are dropped):
 
 Paths are relative to the project root; run via `python main.py`.
 """
+
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +25,9 @@ def to_bool(col: pd.Series) -> pd.Series:
         return col.eq(1)
     mapped = col.str.lower().map({"true": True, "false": False})
     if mapped.isna().any():
-        raise ValueError(f"column {col.name!r} contains values that are neither bool nor 'true'/'false'")
+        raise ValueError(
+            f"column {col.name!r} contains values that are neither bool nor 'true'/'false'"
+        )
     return mapped
 
 
@@ -62,7 +65,7 @@ def clean_track_features(tracks: pd.DataFrame) -> pd.DataFrame:
     return cleaned
 
 
-def derive_skip_class(df: pd.DataFrame) -> pd.Series:
+def derive_skip_class(df: pd.DataFrame) -> pd.Categorical[str]:
     """Classify each play by its most severe true skip flag ('unknown' if no flag is set)."""
     classes = pd.Series("unknown", index=df.index, dtype="object")
     classes[df["not_skipped"]] = "completed"
@@ -72,7 +75,7 @@ def derive_skip_class(df: pd.DataFrame) -> pd.Series:
     return pd.Categorical(
         classes,
         categories=["completed", "skip_3", "skip_2", "skip_1", "unknown"],
-        ordered=True
+        ordered=True,
     )
 
 
@@ -81,10 +84,18 @@ def build_analysis_table(log: pd.DataFrame, tracks: pd.DataFrame) -> pd.DataFram
 
     Raises ValueError if any play has no matching track features.
     """
-    df = log.merge(tracks, left_on="track_id_clean", right_on="track_id", how="left", validate="m:1")
+    df = log.merge(
+        tracks,
+        left_on="track_id_clean",
+        right_on="track_id",
+        how="left",
+        validate="m:1",
+    )
     unmatched = int(df["track_id"].isna().sum())
     if unmatched:
-        raise ValueError(f"{unmatched} plays reference tracks missing from the feature table")
+        raise ValueError(
+            f"{unmatched} plays reference tracks missing from the feature table"
+        )
     df = df.drop(columns=["track_id"])
     df["skip_class"] = derive_skip_class(df)
     return df
@@ -95,9 +106,13 @@ def validate_log(log: pd.DataFrame) -> None:
     dupes = int(log.duplicated(["session_id", "session_position"]).sum())
     if dupes:
         raise ValueError(f"{dupes} duplicate (session_id, session_position) rows")
-    outside = log["session_position"].gt(log["session_length"]) | log["session_position"].lt(1)
+    outside = log["session_position"].gt(log["session_length"]) | log[
+        "session_position"
+    ].lt(1)
     if outside.any():
-        raise ValueError(f"{int(outside.sum())} rows have session_position outside 1..session_length")
+        raise ValueError(
+            f"{int(outside.sum())} rows have session_position outside 1..session_length"
+        )
 
 
 def clean(output_path: Path) -> Path:
@@ -110,7 +125,9 @@ def clean(output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
 
-    masked = {c: int(tracks[c].isna().sum()) for c in ("tempo", "loudness", "time_signature")}
+    masked = {
+        c: int(tracks[c].isna().sum()) for c in ("tempo", "loudness", "time_signature")
+    }
     print(
         f"clean: wrote {len(df):,} plays ({log['session_id'].nunique():,} sessions, "
         f"{tracks['track_id'].nunique():,} tracks) to {output_path}; "

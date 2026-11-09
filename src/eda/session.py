@@ -1,4 +1,5 @@
 """EDA on within-session structure: position, autocorrelation, length, repeats, shuffle."""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,7 +16,7 @@ def skip_by_session_position(df: pd.DataFrame) -> None:
     )
 
     fig, ax = plt.subplots(figsize=(9, 4))
-    ax.bar(rate.index, rate.values)
+    ax.bar(rate.index, rate.to_numpy())
     ax.axhline(df["skip_2"].mean(), color="gray", ls="--", label="overall rate")
     ax.set_xlabel("session_position")
     ax.set_ylabel("skip_2 rate")
@@ -29,7 +30,9 @@ def skip_autocorrelation(df: pd.DataFrame) -> None:
     ordered = df.sort_values(["session_id", "session_position"], kind="stable")
     prev_skip = ordered.groupby("session_id")["skip_2"].shift()
     has_prev = prev_skip.notna()
-    conditional = ordered[has_prev].groupby(prev_skip[has_prev].astype(bool))["skip_2"].mean()
+    conditional = (
+        ordered[has_prev].groupby(prev_skip[has_prev].astype(bool))["skip_2"].mean()
+    )
     overall = df["skip_2"].mean()
     print(
         f"  P(skip | previous skipped) {pct(conditional[True])} vs "
@@ -37,7 +40,9 @@ def skip_autocorrelation(df: pd.DataFrame) -> None:
     )
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.bar(["previous played", "previous skipped"], [conditional[False], conditional[True]])
+    ax.bar(
+        ["previous played", "previous skipped"], [conditional[False], conditional[True]]
+    )
     ax.axhline(overall, color="gray", ls="--", label="overall rate")
     ax.set_ylabel("skip_2 rate for next track")
     ax.set_title("Skip persistence within a session")
@@ -52,8 +57,12 @@ def session_length(df: pd.DataFrame) -> None:
         skip_rate=("skip_2", "mean"),
     )
     print(f"  sessions at the 20-track cap: {pct((sessions['length'] == 20).mean())}")
-    print(f"  sessions at the 10-track minimum: {pct((sessions['length'] == 10).mean())}")
-    print(f"  per-session skip rate vs length correlation: {sessions['length'].corr(sessions['skip_rate']):.3f}")
+    print(
+        f"  sessions at the 10-track minimum: {pct((sessions['length'] == 10).mean())}"
+    )
+    print(
+        f"  per-session skip rate vs length correlation: {sessions['length'].corr(sessions['skip_rate']):.3f}"
+    )
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
     bins = np.arange(9.5, 21.5)
@@ -73,12 +82,16 @@ def within_session_replays(df: pd.DataFrame) -> None:
     """Do people replay tracks within a session, and are replays skipped less?"""
     ordered = df.sort_values(["session_id", "session_position"], kind="stable")
     is_first_play = ordered.groupby(["session_id", "track_id_clean"]).cumcount().eq(0)
-    play_counts = ordered.groupby(["session_id", "track_id_clean"], observed=True).size()
+    play_counts = ordered.groupby(
+        ["session_id", "track_id_clean"], observed=True
+    ).size()
     dist = play_counts.value_counts().sort_index()
 
     rate = ordered.groupby(is_first_play)["skip_2"].mean()
     print(f"  plays that are within-session repeats: {pct((~is_first_play).mean())}")
-    print(f"  skip rate of first plays {pct(rate[True])} vs repeat plays {pct(rate[False])}")
+    print(
+        f"  skip rate of first plays {pct(rate[True])} vs repeat plays {pct(rate[False])}"
+    )
     print(f"  max plays of one track within a session: {int(play_counts.max())}")
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
@@ -97,8 +110,16 @@ def shuffle_vs_ordered(df: pd.DataFrame) -> None:
     """Do shuffle-mode sessions skip differently than sequentially ordered listening?"""
     rate = df.groupby("hist_user_behavior_is_shuffle")["skip_2"].mean()
     n = df.groupby("hist_user_behavior_is_shuffle").size()
-    print(f"  shuffle plays: {int(n[True]):,} ({pct(n[True] / len(df))}); skip rate {pct(rate[True])} vs {pct(rate[False])}")
-    by_context = df.groupby(["context_type", "hist_user_behavior_is_shuffle"], observed=True)["skip_2"].mean().unstack()
+    print(
+        f"  shuffle plays: {int(n[True]):,} ({pct(n[True] / len(df))}); skip rate {pct(rate[True])} vs {pct(rate[False])}"
+    )
+    by_context = (
+        df.groupby(["context_type", "hist_user_behavior_is_shuffle"], observed=True)[
+            "skip_2"
+        ]
+        .mean()
+        .unstack()
+    )
     print("  skip rate by context x shuffle:")
     print(by_context.round(3).to_string())
 

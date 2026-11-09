@@ -1,12 +1,20 @@
 """EDA on listening context and behavior: context type, skip chains, pauses, premium, time of day."""
+
+from typing import cast
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from src.eda import group_counts, mean_rate, pct, save_fig
 
+
 def skip_by_context_type(df: pd.DataFrame) -> None:
     """How does skip rate vary by context_type? Why do algorithmic contexts skip more?"""
-    stats = df.groupby("context_type", observed=True)["skip_2"].agg(rate="mean", n="size").sort_values("rate")
+    stats = (
+        df.groupby("context_type", observed=True)
+        .agg(rate=("skip_2", "mean"), n=("skip_2", "size"))
+        .sort_values("rate")
+    )
     print(stats.assign(rate=stats["rate"].map(pct)).to_string())
 
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -23,18 +31,24 @@ def forward_press_chains(df: pd.DataFrame) -> None:
     """How long do consecutive forward-press chains run within a session?"""
     ordered = df.sort_values(["session_id", "session_position"], kind="stable")
     fwd = ordered["hist_user_behavior_reason_start"].eq("fwdbtn")
-    new_run = fwd.ne(fwd.shift()) | ordered["session_id"].ne(ordered["session_id"].shift())
+    new_run = fwd.ne(fwd.shift()) | ordered["session_id"].ne(
+        ordered["session_id"].shift()
+    )
     run_id = new_run.cumsum()
     run_sizes = fwd.groupby(run_id).sum()
     fwd_runs = run_sizes[run_sizes > 0]
 
     print(f"  plays started by a forward press: {pct(fwd.mean())}")
-    print(f"  forward-run lengths: mean {fwd_runs.mean():.2f}, max {int(fwd_runs.max())}")
-    print(f"  forward-press plays inside runs of 3+: {pct((fwd_runs[fwd_runs >= 3].sum()) / fwd_runs.sum())}")
+    print(
+        f"  forward-run lengths: mean {fwd_runs.mean():.2f}, max {int(fwd_runs.max())}"
+    )
+    print(
+        f"  forward-press plays inside runs of 3+: {pct((fwd_runs[fwd_runs >= 3].sum()) / fwd_runs.sum())}"
+    )
 
     dist = fwd_runs.value_counts().sort_index()
     fig, ax = plt.subplots(figsize=(9, 4))
-    ax.bar(dist.index, dist.values)
+    ax.bar(dist.index, dist.to_numpy())
     ax.set_xlabel("consecutive forward-presses in a row")
     ax.set_ylabel("runs")
     ax.set_title("Distribution of forward-press chain lengths")
@@ -44,21 +58,37 @@ def forward_press_chains(df: pd.DataFrame) -> None:
 def pauses_and_context_switches(df: pd.DataFrame) -> None:
     """What is the relationship between pre-play pauses, context switches, and skipping?"""
 
-    pause_cols = ["no_pause_before_play", "short_pause_before_play", "long_pause_before_play"]
+    pause_cols = [
+        "no_pause_before_play",
+        "short_pause_before_play",
+        "long_pause_before_play",
+    ]
+
     def pause_label(row: pd.Series) -> str:
-        return "+".join(name.replace("_before_play", "") for name in pause_cols if row[name]) or "none"
+        return (
+            "+".join(
+                name.replace("_before_play", "") for name in pause_cols if row[name]
+            )
+            or "none"
+        )
 
     labels = df[pause_cols].apply(pause_label, axis=1)
     stats = (
-        df.groupby(labels, observed=True)["skip_2"]
-        .agg(rate="mean", n="size")
+        df.groupby(labels, observed=True)
+        .agg(rate=("skip_2", "mean"), n=("skip_2", "size"))
         .sort_values("rate", ascending=False)
     )
     print(stats.assign(rate=stats["rate"].map(pct)).to_string())
-    print(f"  overlap: no_pause AND long_pause both true: {int((df['no_pause_before_play'] & df['long_pause_before_play']).sum()):,}")
+    print(
+        f"  overlap: no_pause AND long_pause both true: {int((df['no_pause_before_play'] & df['long_pause_before_play']).sum()):,}"
+    )
     session_start = df["session_position"].eq(1)
-    print(f"  'none' pause combo is exactly the session-start plays: {labels.eq('none').equals(session_start)}")
-    print(f"  skip rate after a context switch: {pct(df.loc[df['context_switch'], 'skip_2'].mean())}")
+    print(
+        f"  'none' pause combo is exactly the session-start plays: {labels.eq('none').equals(session_start)}"
+    )
+    print(
+        f"  skip rate after a context switch: {pct(df.loc[df['context_switch'], 'skip_2'].mean())}"
+    )
 
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.bar(stats.index, stats["rate"])
@@ -91,9 +121,13 @@ def skip_by_hour_of_day(df: pd.DataFrame) -> None:
     """Is there an hour-of-day effect on skipping? Does play volume confound it?"""
     rate = mean_rate(df, "hour_of_day")
     plays = group_counts(df, "hour_of_day")
-    low_hour, high_hour = rate.idxmin(), rate.idxmax()
-    print(f"  lowest skip hour {int(low_hour)}:00 ({pct(rate.min())}); highest {int(high_hour)}:00 ({pct(rate.max())})")
-    print(f"  quietest hour {int(plays.idxmin())}:00 ({int(plays.min()):,} plays); busiest {int(plays.idxmax())}:00 ({int(plays.max()):,})")
+    low_hour, high_hour = cast(int, rate.idxmin()), cast(int, rate.idxmax())
+    print(
+        f"  lowest skip hour {int(low_hour)}:00 ({pct(rate.min())}); highest {int(high_hour)}:00 ({pct(rate.max())})"
+    )
+    print(
+        f"  quietest hour {int(cast(int, plays.idxmin()))}:00 ({int(plays.min()):,} plays); busiest {int(cast(int, plays.idxmax()))}:00 ({int(plays.max()):,})"
+    )
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].bar(plays.index, plays.values)

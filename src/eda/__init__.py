@@ -1,4 +1,5 @@
 """Entry point for the EDA."""
+
 from collections.abc import Callable
 from pathlib import Path
 
@@ -16,7 +17,7 @@ def load_analysis_table(path: Path) -> pd.DataFrame:
     df["skip_class"] = pd.Categorical(
         df["skip_class"],
         categories=["completed", "skip_3", "skip_2", "skip_1", "unknown"],
-        ordered=True
+        ordered=True,
     )
     return df
 
@@ -46,8 +47,10 @@ def pct(x: float) -> str:
     """Format a proportion as a percentage string."""
     return f"{x:.1%}"
 
+
 # Having this down here prevents circular imports. Everything above is just helper functions
 from src.eda import context, features, outcome, popularity, quality, session
+
 
 def eda(args) -> None:
     """Run all analyses (or the comma-separated subset in `analyses`),

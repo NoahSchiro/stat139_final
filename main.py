@@ -15,11 +15,10 @@ def parse_args() -> Namespace:
         default="data/clean/session_tracks.csv",
     )
 
-
     subparsers = parser.add_subparsers(dest="command", required=True)
     eda_parser = subparsers.add_parser("eda", help="Do EDA")
     eda_parser.set_defaults(func=eda)
-    
+
     model_parser = subparsers.add_parser("model", help="Build a model")
     model_parser.set_defaults(func=model)
 
