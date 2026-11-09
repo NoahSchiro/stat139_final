@@ -51,12 +51,13 @@ def pct(x: float) -> str:
 
 
 # Having this down here prevents circular imports. Everything above is just helper functions
-from src.eda import context, features, outcome, popularity, quality, session
+from src.eda import context, features, outcome, popularity, quality, session, summary
 
 
 def eda(args: Namespace) -> None:
     """Run all analyses, printing results and saving figures to assets/."""
     registry: dict[int, Callable[[pd.DataFrame], None]] = {
+        0: summary.descriptive_summary,
         1: outcome.skip_flag_structure,
         2: outcome.listening_depth,
         3: session.skip_by_session_position,
