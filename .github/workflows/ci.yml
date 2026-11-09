@@ -82,8 +82,10 @@ jobs:
       - name: Build the report
         run: |
           set +e
-          gloc --base "origin/${{ github.base_ref }}" --style markdown \
-            --depth 1 --max-src 1000 \
+          gloc --base "origin/${{ github.base_ref }}" \
+            --style markdown \
+            --exclude *.lock,data/*,assets/* \
+            --max-src 1000 \
             > report.md 2> limits.txt
           status=$?
           set -e
