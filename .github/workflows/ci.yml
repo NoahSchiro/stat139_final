@@ -73,5 +73,31 @@ jobs:
           tar -xzf gloc-x86_64-linux-musl.tar.gz
           sudo mv gloc /usr/local/bin/
 
-      - name: Report churn vs base branch
-        run: gloc --base origin/main
+      - name: Build the report
+        run: |
+          set +e
+          ./gloc --base "origin/${{ github.base_ref }}" --style markdown \
+            --depth 1 --max-src 1000 \
+            > report.md 2> limits.txt
+          status=$?
+          set -e
+          if [ "$status" -ge 2 ]; then
+            cat limits.txt >&2
+            exit 1
+          fi
+          {
+            echo "<!-- gloc report: do not edit -->"
+            echo "## gloc report"
+            echo
+            cat report.md
+            echo
+            if [ "$status" -eq 1 ]; then
+              echo "> [!WARNING]"
+              echo "> This PR exceeds the churn limits. Consider scoping it down or splitting it into smaller PRs."
+              echo
+              echo '```'
+              cat limits.txt
+              echo '```'
+            else
+              echo "✅ Within churn limits."
+            fi
