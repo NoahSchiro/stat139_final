@@ -51,7 +51,17 @@ def pct(x: float) -> str:
 
 
 # Having this down here prevents circular imports. Everything above is just helper functions
-from src.eda import context, features, outcome, popularity, quality, session, summary
+from src.aggregate import aggregate
+from src.eda import (
+    context,
+    features,
+    outcome,
+    popularity,
+    quality,
+    session,
+    summary,
+    tracks,
+)
 
 
 def eda(args: Namespace) -> None:
@@ -80,8 +90,14 @@ def eda(args: Namespace) -> None:
         20: popularity.key_mode_signature,
         21: quality.data_quality_checks,
         22: quality.track_reuse,
+        23: tracks.plays_per_track,
+        24: tracks.track_skip_rate_distribution,
+        25: tracks.track_skip_vs_features,
+        26: tracks.track_feature_correlations,
+        27: tracks.session_skip_by_context,
     }
     df = load_analysis_table(Path(args.clean_path))
+    aggregate(df)
     for number in sorted(registry.keys()):
         run = registry[number]
         question = (run.__doc__ or "").strip()

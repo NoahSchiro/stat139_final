@@ -6,3 +6,6 @@ __pycache__/
 # Data and image output
 assets/
 data/
+
+# Generated table fragments for the EDA report
+reports/eda/tables/
