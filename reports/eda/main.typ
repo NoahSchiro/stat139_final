@@ -201,7 +201,7 @@ unlabeled plays as not-`skip_2`, which is how the raw flag records them.
 ) <tab-flags>
 
 Following the proposal, our primary outcome is `skip_2`: a play is a skip if the track was
-played only briefly. This is the challenge's own skip definition and it splits the data
+played only briefly. This is the Spotify Sequential Skip Prediction Challenge's own skip definition and it splits the data
 almost in half (51.7%), which maximises the information in each play. `skip_1` and
 `skip_3` are kept for sensitivity analyses. For description only, we also use
 `skip_class`, the most severe flag set on each play (@fig-skip-class); it shows that
