@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.aggregate import AUDIO_FEATURES, CONTEXT_TYPES, MIN_PLAYS, build_track_table
+from src.aggregate import AUDIO_FEATURES, build_track_table
 from src.eda import pct, save_fig
 
 
@@ -54,7 +54,7 @@ def track_skip_rate_distribution(df: pd.DataFrame) -> None:
     axes[0].set_xlabel("track skip rate (share of plays with skip_2)")
     axes[0].set_ylabel("tracks")
     axes[0].set_title(
-        f"Skip rate across {len(tracks):,} tracks with >= {MIN_PLAYS} plays"
+        f"Skip rate across {len(tracks):,} tracks with >= {int(tracks['n_plays'].min())} plays"
     )
     axes[0].legend()
     axes[1].scatter(tracks["n_plays"], rate, s=4, alpha=0.3)
@@ -129,7 +129,7 @@ def session_skip_by_context(df: pd.DataFrame) -> None:
     stats = sessions.groupby("context_type")["mean"].agg(["size", "mean", "std"])
     print(stats.round(3).to_string())
 
-    order = [c for c in CONTEXT_TYPES if c in stats.index]
+    order = list(stats.sort_values("mean").index)
     data = [sessions.loc[sessions["context_type"] == c, "mean"] for c in order]
     fig, ax = plt.subplots(figsize=(10, 4.5))
     ax.boxplot(data, tick_labels=order, showmeans=True)

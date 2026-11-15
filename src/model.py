@@ -1,12 +1,13 @@
 """Baseline model: weighted least squares of track skip rate on audio features.
 
-Unit: one row per track with >= MIN_PLAYS plays. Weights are the play count, since a
+Unit: one row per track with at least five plays. Weights are the play count, since a
 rate estimated from more plays has smaller variance. Audio features and controls are
 standardized so coefficients are comparable (change in skip rate per 1 SD). The main
 hypothesis is tested with a nested F-test: covariates-only versus covariates plus the
 audio-feature block.
 
-Outputs go to assets/ (figures) and reports/eda/tables/ (Typst table fragments).
+Figures and CSV tables are written to assets/. The report copies the numbers it needs
+from those outputs; nothing here generates report source.
 """
 
 from argparse import Namespace
@@ -26,20 +27,7 @@ from statsmodels.stats.outliers_influence import (
 from src.aggregate import AUDIO_FEATURES, aggregate
 from src.eda import load_analysis_table, save_fig
 
-# user_collection is the omitted (reference) context so the shares are not collinear.
-COVARIATES = (
-    "us_popularity_estimate",
-    "release_year",
-    "prop_catalog",
-    "prop_editorial_playlist",
-    "prop_personalized_playlist",
-    "prop_radio",
-    "prop_charts",
-    "prop_shuffle",
-    "prop_premium",
-    "mean_position",
-)
-TABLE_DIR = Path("reports/eda/tables")
+ASSETS = Path("assets")
 
 
 def design(tracks: pd.DataFrame, columns: tuple[str, ...]) -> pd.DataFrame:
@@ -58,15 +46,8 @@ def fit_wls(tracks: pd.DataFrame, columns: tuple[str, ...]) -> RegressionResults
     return model.fit()
 
 
-def typst_rows(rows: list[list[str]], path: Path) -> None:
-    """Write rows as a Typst array literal that main.typ splices into a table."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    body = ",\n".join("  (" + ", ".join(f'"{c}"' for c in row) + ")" for row in rows)
-    path.write_text(f"(\n{body},\n)\n")
-
-
 def coefficient_table(fit: RegressionResultsWrapper, path: Path) -> pd.DataFrame:
-    """Save the coefficient table (also returned, in display order)."""
+    """Save the coefficient table as CSV (also returned, in display order)."""
     table = pd.DataFrame(
         {
             "coef": fit.params,
@@ -77,11 +58,7 @@ def coefficient_table(fit: RegressionResultsWrapper, path: Path) -> pd.DataFrame
             "hi": fit.conf_int()[1],
         }
     ).drop(index="const")
-    rows = [
-        [str(name), f"{r.coef:+.4f}", f"{r.se:.4f}", f"{r.t:+.2f}", f"{r.p:.3f}"]
-        for name, r in table.iterrows()
-    ]
-    typst_rows(rows, path)
+    table.round(4).to_csv(path)
     return table
 
 
@@ -92,7 +69,7 @@ def vif_table(x: pd.DataFrame, path: Path) -> pd.Series:
         [variance_inflation_factor(x.to_numpy(), x.columns.get_loc(c)) for c in cols],
         index=cols,
     ).sort_values(ascending=False)
-    typst_rows([[str(name), f"{v:.1f}"] for name, v in vif.items()], path)
+    vif.round(1).rename("vif").to_csv(path)
     return vif
 
 
@@ -138,8 +115,23 @@ def model(args: Namespace) -> None:
     tracks = aggregate(df).dropna(subset=list(AUDIO_FEATURES))
     print(f"model: {len(tracks):,} tracks after dropping rows with masked features")
 
-    reduced = fit_wls(tracks, COVARIATES)
-    full = fit_wls(tracks, COVARIATES + AUDIO_FEATURES)
+    # Covariates named in the proposal: track-level "trendiness" controls, then the
+    # context mix aggregated from each track's plays. user_collection is the omitted
+    # (reference) context so the six context shares, which sum to one, are not collinear.
+    covariates = (
+        "us_popularity_estimate",
+        "release_year",
+        "prop_catalog",
+        "prop_editorial_playlist",
+        "prop_personalized_playlist",
+        "prop_radio",
+        "prop_charts",
+        "prop_shuffle",
+        "prop_premium",
+        "mean_position",
+    )
+    reduced = fit_wls(tracks, covariates)
+    full = fit_wls(tracks, covariates + AUDIO_FEATURES)
     f_stat, p_value, df_diff = full.compare_f_test(reduced)
     print(full.summary())
     print(
@@ -150,25 +142,12 @@ def model(args: Namespace) -> None:
         f"(adj. {full.rsquared_adj:.4f})"
     )
 
-    x = design(tracks, COVARIATES + AUDIO_FEATURES)
-    vif = vif_table(x, TABLE_DIR / "vif.typ")
+    x = design(tracks, covariates + AUDIO_FEATURES)
+    vif = vif_table(x, ASSETS / "baseline_vif.csv")
     print("VIF > 5:", {k: round(v, 1) for k, v in vif[vif > 5].items()})
 
-    table = coefficient_table(full, TABLE_DIR / "coefficients.typ")
-    typst_rows(
-        [
-            ["Tracks (n)", f"{int(full.nobs):,}"],
-            ["Plays covered", f"{int(tracks['n_plays'].sum()):,}"],
-            ["R² (covariates only)", f"{reduced.rsquared:.3f}"],
-            ["R² (covariates + audio)", f"{full.rsquared:.3f}"],
-            ["Adjusted R² (full)", f"{full.rsquared_adj:.3f}"],
-            [
-                "Nested F (audio block)",
-                f"{f_stat:.2f} on {int(df_diff)} and {int(full.df_resid)} df",
-            ],
-            ["Nested F p-value", f"{p_value:.1e}"],
-        ],
-        TABLE_DIR / "fit.typ",
-    )
+    table = coefficient_table(full, ASSETS / "baseline_coefficients.csv")
+    print("\ncoefficients (standardized):")
+    print(table.round(4).to_string())
     plot_coefficients(table, "28_baseline_coefficients")
     plot_diagnostics(full, tracks, "29_baseline_diagnostics")

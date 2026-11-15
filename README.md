@@ -11,13 +11,13 @@ The raw data are gitignored. Download `log_mini.csv` and `tf_mini.csv` from
 ```sh
 uv sync
 uv run python main.py eda     # cleans, aggregates, writes figures to assets/
-uv run python main.py model   # fits the baseline WLS, writes assets/ and reports/eda/tables/
+uv run python main.py model   # fits the baseline WLS, writes figures and CSV tables to assets/
 ```
 
 ## Reports
 
 Both reports are written in [Typst](https://typst.app). The proposal is self-contained;
-the EDA report needs the figures and tables above and must be compiled from the repo root:
+the EDA report needs the figures above and must be compiled from the repo root:
 
 ```sh
 typst compile proposal/main.typ
