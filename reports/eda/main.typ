@@ -43,10 +43,11 @@
 
 = Overview
 
-This report documents the exploratory data analysis for our study of which audio
-characteristics of a track are associated with how often listeners skip it, after
-accounting for popularity and listening context, and fits the baseline model that tests
-that question. Our main hypothesis is that, holding popularity and context mix fixed,
+This report documents the exploratory data analysis (EDA) for our study of Spotify
+music-streaming session logs. We are interested in whether, and which, audio
+characteristics of a track are associated with how often listeners skip it,
+disregarding popularity and listening context. Our main hypothesis is that,
+holding popularity and context mix fixed,
 the audio features of a track jointly explain a non-trivial share of the variation in its
 skip rate.
 
