@@ -2,3 +2,7 @@
 *.pdf
 
 __pycache__/
+
+# Data and image output
+assets/
+data/
