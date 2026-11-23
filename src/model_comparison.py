@@ -1,8 +1,10 @@
 from pathlib import Path
+
 import pandas as pd
+
 from src.aggregate import AUDIO_FEATURES, aggregate
 from src.eda import load_analysis_table
-from src.model import fit_wls, design, vif_table
+from src.model import design, fit_wls, vif_table
 from src.model_analysis import CONTROLS
 
 ASSETS = Path("assets")
@@ -47,7 +49,7 @@ def main():
         )
 
         f_stat, p_value, _ = fit.compare_f_test(controls_only)
-        f_drop, p_drop, _ = original.compare_f_test(fit)
+        _, p_drop, _ = original.compare_f_test(fit)
 
         results.append({
             "Model": name,
@@ -64,18 +66,18 @@ def main():
 
     comparison = pd.DataFrame(results).set_index("Model")
 
-    print("")
+    print()
     print("=== ORIGINAL BASELINE ===")
     print(f"R^2: {original.rsquared:.4f}")
     print(f"Adjusted R^2: {original.rsquared_adj:.4f}")
     print(f"AIC: {original.aic:.2f}")
 
-    print("")
+    print()
     print("=== REDUCED MODEL COMPARISON ===")
     print(comparison.round(4).to_string())
 
     comparison.to_csv(ASSETS / "model_comparison.csv")
-    print("")
+    print()
     print("Saved assets/model_comparison.csv")
 
 

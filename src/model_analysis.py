@@ -1,7 +1,8 @@
 from pathlib import Path
+
 from src.aggregate import AUDIO_FEATURES, aggregate
 from src.eda import load_analysis_table
-from src.model import fit_wls, design, vif_table, coefficient_table
+from src.model import coefficient_table, design, fit_wls, vif_table
 
 ASSETS = Path("assets")
 
@@ -44,7 +45,7 @@ def main():
     reduced = fit_wls(tracks, CONTROLS + REDUCED_AUDIO)
 
     # Compare our model performance
-    print("")
+    print()
     print("=== Model Comparison ===")
     print(f"Tracks: {len(tracks)}")
     print(f"Original R^2: {original.rsquared:.4f}")
@@ -55,15 +56,15 @@ def main():
     print(f"Reduced AIC: {reduced.aic:.2f}")
 
     # Test whether retained audio features add explanatory power
-    f_stat, p_value, df_diff = reduced.compare_f_test(controls_only)
-    print("")
+    f_stat, p_value, _ = reduced.compare_f_test(controls_only)
+    print()
     print("=== Nested F-Test: Reduced Audio Block ===")
     print(f"F-statistic: {f_stat:.4f}")
     print(f"p-value: {p_value:.4e}")
 
     # Now we test whether excluded features jointly add explanatory power
     f_drop, p_drop, _ = original.compare_f_test(reduced)
-    print("")
+    print()
     print("=== F-Test: Excluded Audio Features ===")
     print(f"F-statistic: {f_drop:.4f}")
     print(f"p-value: {p_drop:.4e}")
@@ -72,17 +73,17 @@ def main():
     x = design(tracks, CONTROLS + REDUCED_AUDIO)
     vif = vif_table(x, ASSETS / "reduced_vif.csv")
 
-    print("")
+    print()
     print("=== Reduced Model VIF ===")
     print(vif.round(2).to_string())
 
     # Save and display coefficients
     coefs = coefficient_table(reduced, ASSETS / "reduced_coefficients.csv")
 
-    print("")
+    print()
     print("=== Reduced Audio Coefficients ===")
     print(coefs.loc[list(REDUCED_AUDIO), ["coef", "se", "p"]].round(4))
-    print("")
+    print()
     print("=== Reduced Model Summary ===")
     print(reduced.summary())
 

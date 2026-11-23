@@ -1,10 +1,12 @@
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from scipy import stats
 from statsmodels.stats.multitest import multipletests
+
 from src.aggregate import AUDIO_FEATURES, aggregate
 from src.eda import load_analysis_table
 from src.model import design, fit_wls
@@ -15,7 +17,7 @@ ASSETS = Path("assets")
 
 
 def run_anova(df):
-    print("")
+    print()
     print("=== One-Way ANOVA by Listening Context ===")
 
     # One observation per session-context combination
@@ -34,7 +36,7 @@ def run_anova(df):
     groups = [group["skip_rate"].to_numpy() for _, group in sessions.groupby("context_type")]
     f_stat, p_value = stats.f_oneway(*groups)
 
-    print("")
+    print()
     print("=== ANOVA F-Test ===")
     print(f"F-statistic: {f_stat:.4f}")
     print(f"p-value: {p_value:.6g}")
@@ -67,7 +69,7 @@ def run_anova(df):
 
     perm_p = (extreme + 1) / (n_perm + 1)
 
-    print("")
+    print()
     print("=== Permutation Test ===")
     print(f"Permutations: {n_perm}")
     print(f"Permutation p-value: {perm_p:.6g}")
@@ -84,7 +86,7 @@ def run_anova(df):
 
     cluster_p = float(test.pvalue)
 
-    print("")
+    print()
     print("=== Session-Clustered Context Test ===")
     print(f"Wald p-value: {cluster_p:.6g}")
 
@@ -101,7 +103,7 @@ def run_anova(df):
 
 
 def run_group_tests(df):
-    print("")
+    print()
     print("=== Grouped Nested F-Tests ===")
 
     tracks = aggregate(df).dropna(subset=list(CONTROLS + AUDIO_FEATURES))
@@ -169,7 +171,7 @@ def run_group_tests(df):
     print(results.round(5).to_string(index=False))
 
     results.to_csv(ASSETS / "grouped_f_tests.csv", index=False)
-    print("")
+    print()
     print("Saved grouped F-test results.")
 
 
@@ -178,7 +180,7 @@ def main():
     df = load_analysis_table(Path("data/clean/session_tracks.csv"))
     run_anova(df)
     run_group_tests(df)
-    print("")
+    print()
     print("Proposal hypothesis tests completed!")
 
 if __name__ == "__main__": main()

@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -84,12 +85,12 @@ def main():
     interaction = fit(full_formula, grouped)
 
     # Step 1. Overall model comparison
-    print("")
+    print()
     print("=== Phase 2: Model Comparison ===")
     print("Track-context observations:", len(grouped))
     print("Unique tracks:", grouped["track_id_clean"].nunique())
     print("Plays:", grouped["n_plays"].sum())
-    print("")
+    print()
     print(f"Main-effects R^2: {baseline.rsquared:.4f}")
     print(f"Interaction R^2: {interaction.rsquared:.4f}")
     print(f"Main-effects AIC: {baseline.aic:.2f}")
@@ -102,7 +103,7 @@ def main():
     R = np.eye(len(interaction.params))[indices]
     test = interaction.wald_test(R, scalar=True)
 
-    print("")
+    print()
     print("=== Joint Interaction Test ===")
     print(f"Chi-square: {float(test.statistic):.4f}")
     print(f"Degrees of freedom: {int(test.df_denom)}")
@@ -117,7 +118,7 @@ def main():
 
     results["p_fdr"] = multipletests(results["p"], method="fdr_bh")[1]
 
-    print("")
+    print()
     print("=== Individual Interaction Coefficients ===")
     print(results.round(5).to_string())
     results.to_csv(ASSETS / "interaction_coefficients.csv")
@@ -148,7 +149,7 @@ def main():
 
     slopes = pd.DataFrame(slopes)
 
-    print("")
+    print()
     print("=== Context-Specific Audio Slopes ===")
     print(
         slopes.pivot(
@@ -161,7 +162,7 @@ def main():
     slopes.to_csv(ASSETS / "context_audio_slopes.csv", index=False)
 
     # Step 4. Feature-level Wald tests
-    print("")
+    print()
     print("=== Feature-Level Wald Tests ===")
 
     feature_tests = []
@@ -211,11 +212,11 @@ def main():
     fig.savefig(ASSETS / "interaction_slopes.png", dpi=200, bbox_inches="tight")
     plt.close(fig)
 
-    print("")
+    print()
     print("Saved interaction_slopes.png")
 
     # Step 6. Minimum-play sensitivity analysis
-    print("")
+    print()
     print("=== Minimum-Play Sensitivity ===")
 
     sensitivity = []
@@ -243,7 +244,7 @@ def main():
     sensitivity = pd.DataFrame(sensitivity)
     print(sensitivity.round(5).to_string(index=False))
     sensitivity.to_csv(ASSETS / "interaction_sensitivity.csv", index=False)
-    print("")
+    print()
     print("Phase 2 analyses completed!")
 
 

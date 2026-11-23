@@ -1,10 +1,12 @@
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 from scipy import stats
+
 from src.model import design
-from src.model_robustness import prepare_data, PREDICTORS
+from src.model_robustness import PREDICTORS, prepare_data
 
 ASSETS = Path("assets")
 
@@ -35,7 +37,7 @@ def main():
     cooks = weighted_fit.get_influence().cooks_distance[0]
 
     # Step 1. Look at Model diagnostics
-    print("")
+    print()
     print("=== Final Model Diagnostics ===")
     print(f"Tracks: {len(tracks)}")
     print(f"R^2: {fit.rsquared:.4f}")
@@ -53,7 +55,7 @@ def main():
     # Step 2. Examine the five most influential tracks
     top = np.argsort(cooks)[-5:][::-1]
 
-    print("")
+    print()
     print("=== Top 5 Influential Tracks ===")
 
     for i in top:
@@ -74,7 +76,7 @@ def main():
         weights=weights.iloc[mask]
     ).fit(cov_type="HC3")
 
-    print("")
+    print()
     print("=== Influence Sensitivity ===")
     print(f"Original R^2: {fit.rsquared:.4f}")
     print(f"Without top track R^2: {refit.rsquared:.4f}")
@@ -116,7 +118,7 @@ def main():
     fig.savefig(ASSETS / "final_model_diagnostics.png", dpi=200, bbox_inches="tight")
     plt.close(fig)
 
-    print("")
+    print()
     print("Saved final_model_diagnostics.png")
 
 

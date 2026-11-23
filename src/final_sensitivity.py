@@ -1,10 +1,13 @@
 from pathlib import Path
+
 import statsmodels.api as sm
-from src.eda import load_analysis_table
+
 from src.aggregate import aggregate
+from src.eda import load_analysis_table
 from src.model import design
 from src.model_analysis import CONTROLS
 from src.model_robustness import AUDIO
+
 
 # Load the cleaned dataset
 df = load_analysis_table(Path("data/clean/session_tracks.csv"))
@@ -32,14 +35,14 @@ def fit_model(data):
 model_original = fit_model(original)
 model_filtered = fit_model(filtered)
 
-print("")
+print()
 print("=== Unlabeled Play Sensitivity ===")
 print("Tracks compared:", len(filtered))
 print("Original R^2:", round(model_original.rsquared, 4))
 print("Filtered R^2:", round(model_filtered.rsquared, 4))
 
 for feature in ["duration", "speechiness", "loudness", "bounciness"]:
-    print("")
+    print()
     print(f"{feature}")
     print("Original coefficient:", round(model_original.params[feature], 5))
     print("Filtered coefficient:", round(model_filtered.params[feature], 5))

@@ -1,9 +1,11 @@
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
-from src.model_interactions import AUDIO, INTERACTIONS, CONTEXT
+
+from src.model_interactions import AUDIO, CONTEXT, INTERACTIONS
 
 ASSETS = Path("assets")
 
@@ -76,14 +78,14 @@ def main():
     session_codes = pd.factorize(plays["session_id"])[0]
     groups = np.column_stack([track_codes, session_codes])
 
-    print("")
+    print()
     print("=== Session Dependence Check ===")
     print("Plays:", len(plays))
     print("Tracks:", plays["track_id_clean"].nunique())
     print("Sessions:", plays["session_id"].nunique())
 
     # Test interactions for all three skip definitions
-    print("")
+    print()
     print("=== Alternative Skip Definition Checks ===")
 
     all_results = []
@@ -104,7 +106,7 @@ def main():
         joint_track = float(track_fit.wald_test(R, scalar=True).pvalue)
         joint_both = float(both_fit.wald_test(R, scalar=True).pvalue)
 
-        print("")
+        print()
         print(f"=== {outcome} ===")
         print(f"R^2: {model.rsquared:.4f}")
         print(f"Track-clustered joint p: {joint_track:.6g}")
@@ -130,7 +132,7 @@ def main():
 
         # FDR correction across the four feature tests
         adjusted = multipletests([row["two_way_p"] for row in feature_results], method="fdr_bh")[1]
-        print("")
+        print()
         print("=== Feature-Level Tests ===")
 
         for row, p_fdr in zip(feature_results, adjusted):
@@ -148,9 +150,9 @@ def main():
 
     results.to_csv(ASSETS / "session_interaction_robustness.csv", index=False)
 
-    print("")
+    print()
     print("Saved session_interaction_robustness.csv")
-    print("")
+    print()
     print("Session dependence and robustness checks completed!")
 
 
