@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import TypedDict
 
 import numpy as np
 import pandas as pd
@@ -16,7 +17,12 @@ from src.model_robustness import AUDIO as MODEL_B_AUDIO
 ASSETS = Path("assets")
 
 
-def run_anova(df):
+class ModelSpecification(TypedDict):
+    audio: tuple[str, ...]
+    groups: dict[str, tuple[str, ...]]
+
+
+def run_anova(df: pd.DataFrame) -> None:
     print()
     print("=== One-Way ANOVA by Listening Context ===")
 
@@ -111,7 +117,7 @@ def run_anova(df):
     ).to_csv(ASSETS / "anova_tests.csv", index=False)
 
 
-def run_group_tests(df):
+def run_group_tests(df: pd.DataFrame) -> None:
     print()
     print("=== Grouped Nested F-Tests ===")
 
@@ -119,7 +125,7 @@ def run_group_tests(df):
 
     # Groups from the proposal and related audio features
     # AI Helped me organize this variable lol
-    specifications = {
+    specifications: dict[str, ModelSpecification] = {
         "Original baseline": {
             "audio": AUDIO_FEATURES,
             "groups": {
@@ -137,13 +143,14 @@ def run_group_tests(df):
         },
     }
 
-    results = []
+    result_rows = []
+
     for model_name, specification in specifications.items():
         audio = specification["audio"]
         columns = CONTROLS + audio
-        full = fit_wls(tracks, columns)  ## ful WLS model
+        full = fit_wls(tracks, columns)  # Full WLS model
 
-        robust = sm.WLS(  # HC3 version for robust joint tests
+        robust = sm.WLS(
             tracks["skip_rate"], design(tracks, columns), weights=tracks["n_plays"]
         ).fit(cov_type="HC3")
 
@@ -151,9 +158,11 @@ def run_group_tests(df):
             # Remove only the features being tested
             reduced_columns = tuple(col for col in columns if col not in features)
             reduced = fit_wls(tracks, reduced_columns)
+
             f_stat, p_value, df_diff = full.compare_f_test(
                 reduced
-            )  ## classical nested F-test
+            )  # Classical nested F-test
+
             indices = [
                 robust.params.index.get_loc(col) for col in features
             ]  # HC3-robust joint Wald test
@@ -161,7 +170,7 @@ def run_group_tests(df):
             R = np.eye(len(robust.params))[indices]
             test = robust.wald_test(R, scalar=True)
 
-            results.append(
+            result_rows.append(
                 {
                     "model": model_name,
                     "group": group_name,
@@ -174,12 +183,13 @@ def run_group_tests(df):
                 }
             )
 
-    results = pd.DataFrame(results)
+    results = pd.DataFrame(result_rows)
 
     # Correct robust p-values within each model's group tests
     results["HC3_p_fdr"] = results.groupby("model")["HC3_p"].transform(
         lambda p: multipletests(p, method="fdr_bh")[1]
     )
+
     print(results.round(5).to_string(index=False))
 
     results.to_csv(ASSETS / "grouped_f_tests.csv", index=False)
@@ -187,7 +197,7 @@ def run_group_tests(df):
     print("Saved grouped F-test results.")
 
 
-def main():
+def main() -> None:
     ASSETS.mkdir(exist_ok=True)
     df = load_analysis_table(Path("data/clean/session_tracks.csv"))
     run_anova(df)

@@ -11,7 +11,7 @@ from src.model_robustness import PREDICTORS, prepare_data
 ASSETS = Path("assets")
 
 
-def main():
+def main() -> None:
     ASSETS.mkdir(exist_ok=True)
 
     # Load and prepare Model B (selected model) data

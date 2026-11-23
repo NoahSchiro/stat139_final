@@ -32,7 +32,7 @@ REMOVE = {
 REDUCED_AUDIO = tuple(f for f in AUDIO_FEATURES if f not in REMOVE)
 
 
-def main():
+def main() -> None:
     ASSETS.mkdir(exist_ok=True)
 
     # Load and aggregate the cleaned dataset

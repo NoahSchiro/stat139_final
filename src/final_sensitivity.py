@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import pandas as pd
 import statsmodels.api as sm
+from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from src.aggregate import aggregate
 from src.eda import load_analysis_table
@@ -28,7 +30,7 @@ filtered = filtered[filtered["track_id_clean"].isin(common_ids)]
 predictors = tuple(CONTROLS) + tuple(AUDIO)
 
 
-def fit_model(data):
+def fit_model(data: pd.DataFrame) -> RegressionResultsWrapper:
     X = design(data, predictors)
     return sm.WLS(data["skip_rate"], X, weights=data["n_plays"]).fit(cov_type="HC3")
 

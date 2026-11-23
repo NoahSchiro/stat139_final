@@ -24,7 +24,7 @@ MODELS = {
 }
 
 
-def main():
+def main() -> None:
     ASSETS.mkdir(exist_ok=True)
 
     df = load_analysis_table(Path("data/clean/session_tracks.csv"))
@@ -36,7 +36,7 @@ def main():
     results = []
 
     for name, selected in MODELS.items():
-        audio = tuple(  ## Keep one rhythm feature and remove the other three. Also exclude mechanism and organism
+        audio = tuple(
             f
             for f in AUDIO_FEATURES
             if f not in {"mechanism", "organism"} and (f not in RHYTHM or f == selected)

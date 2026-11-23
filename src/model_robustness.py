@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from src.aggregate import AUDIO_FEATURES
 from src.model import design
@@ -24,7 +25,7 @@ PREDICTORS = CONTROLS + AUDIO
 OUTCOMES = ("skip_1", "skip_2", "skip_3")
 
 
-def prepare_data():
+def prepare_data() -> pd.DataFrame:
     df = pd.read_csv("data/clean/session_tracks.csv")
 
     boolean_cols = list(OUTCOMES) + ["hist_user_behavior_is_shuffle", "premium"]
@@ -70,12 +71,12 @@ def prepare_data():
     return tracks
 
 
-def fit_model(data, outcome):
+def fit_model(data: pd.DataFrame, outcome: str) -> RegressionResultsWrapper:
     x = design(data, PREDICTORS)
     return sm.WLS(data[outcome], x, weights=data["n_plays"]).fit(cov_type="HC3")
 
 
-def main():
+def main() -> None:
     ASSETS.mkdir(exist_ok=True)
     tracks = prepare_data()
 
@@ -147,15 +148,15 @@ def main():
         beta = np.linalg.lstsq(X_boot, y_boot, rcond=None)[0]
         estimates.append(beta)
 
-    estimates = np.asarray(estimates)
+    estimates_array = np.asarray(estimates)
     original_fit = fit_model(base, "skip_2_rate")
 
     bootstrap = pd.DataFrame(
         {
             "feature": x_df.columns,
             "coef": original_fit.params.to_numpy(),
-            "ci_lower": np.percentile(estimates, 2.5, axis=0),
-            "ci_upper": np.percentile(estimates, 97.5, axis=0),
+            "ci_lower": np.percentile(estimates_array, 2.5, axis=0),
+            "ci_upper": np.percentile(estimates_array, 97.5, axis=0),
         }
     )
 

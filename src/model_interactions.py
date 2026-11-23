@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
+from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.stats.multitest import multipletests
 
 ASSETS = Path("assets")
@@ -28,7 +29,7 @@ INTERACTIONS = ("bounciness", "energy", "duration", "speechiness")
 CONTEXT = "C(context_type, Treatment(reference='user_collection'))"
 
 
-def main():
+def main() -> None:
     ASSETS.mkdir(exist_ok=True)
     df = pd.read_csv("data/clean/session_tracks.csv")
 
@@ -83,7 +84,7 @@ def main():
     full_formula = base_formula + " + " + " + ".join(interaction_terms)
 
     # Weighted regression with track-clustered standard errors
-    def fit(formula, data):
+    def fit(formula: str, data: pd.DataFrame) -> RegressionResultsWrapper:
         return smf.wls(formula, data=data, weights=data["n_plays"]).fit(
             cov_type="cluster", cov_kwds={"groups": data["track_id_clean"]}
         )
@@ -133,7 +134,7 @@ def main():
     results.to_csv(ASSETS / "interaction_coefficients.csv")
 
     # Step 3. Context-specific audio slopes
-    slopes = []
+    slope_rows = []
 
     for feature in INTERACTIONS:
         for context in sorted(grouped["context_type"].unique()):
@@ -147,7 +148,7 @@ def main():
             estimate = interaction.t_test(contrast)
             lo, hi = estimate.conf_int()[0]
 
-            slopes.append(
+            slope_rows.append(
                 {
                     "feature": feature,
                     "context": context,
@@ -158,7 +159,7 @@ def main():
                 }
             )
 
-    slopes = pd.DataFrame(slopes)
+    slopes = pd.DataFrame(slope_rows)
 
     print()
     print("=== Context-Specific Audio Slopes ===")
@@ -174,7 +175,7 @@ def main():
     print()
     print("=== Feature-Level Wald Tests ===")
 
-    feature_tests = []
+    feature_test_rows = []
 
     for feature in INTERACTIONS:
         terms = [
@@ -185,7 +186,7 @@ def main():
         R = np.eye(len(interaction.params))[indices]
         test = interaction.wald_test(R, scalar=True)
 
-        feature_tests.append(
+        feature_test_rows.append(
             {
                 "feature": feature,
                 "chi2": float(test.statistic),
@@ -194,8 +195,7 @@ def main():
             }
         )
 
-    feature_tests = pd.DataFrame(feature_tests)
-
+    feature_tests = pd.DataFrame(feature_test_rows)
     feature_tests["p_fdr"] = multipletests(feature_tests["p"], method="fdr_bh")[1]
 
     print(feature_tests.round(5).to_string(index=False))
@@ -237,18 +237,20 @@ def main():
     print()
     print("=== Minimum-Play Sensitivity ===")
 
-    sensitivity = []
+    sensitivity_rows = []
 
     for threshold in (1, 3, 5):
         subset = grouped[grouped["n_plays"] >= threshold].copy()
         base_fit = fit(base_formula, subset)
         full_fit = fit(full_formula, subset)
+
         terms = [name for name in full_fit.params.index if ":C(context_type" in name]
         indices = [full_fit.params.index.get_loc(name) for name in terms]
+
         R = np.eye(len(full_fit.params))[indices]
         test = full_fit.wald_test(R, scalar=True)
 
-        sensitivity.append(
+        sensitivity_rows.append(
             {
                 "min_plays": threshold,
                 "observations": len(subset),
@@ -261,9 +263,10 @@ def main():
             }
         )
 
-    sensitivity = pd.DataFrame(sensitivity)
+    sensitivity = pd.DataFrame(sensitivity_rows)
     print(sensitivity.round(5).to_string(index=False))
     sensitivity.to_csv(ASSETS / "interaction_sensitivity.csv", index=False)
+
     print()
     print("Phase 2 analyses completed!")
 

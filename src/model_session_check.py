@@ -10,7 +10,7 @@ from src.model_interactions import AUDIO, CONTEXT, INTERACTIONS
 ASSETS = Path("assets")
 
 
-def main():
+def main() -> None:
     ASSETS.mkdir(exist_ok=True)
     df = pd.read_csv("data/clean/session_tracks.csv")
 
