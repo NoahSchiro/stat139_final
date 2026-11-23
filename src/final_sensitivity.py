@@ -8,7 +8,6 @@ from src.model import design
 from src.model_analysis import CONTROLS
 from src.model_robustness import AUDIO
 
-
 # Load the cleaned dataset
 df = load_analysis_table(Path("data/clean/session_tracks.csv"))
 
@@ -28,9 +27,11 @@ filtered = filtered[filtered["track_id_clean"].isin(common_ids)]
 
 predictors = tuple(CONTROLS) + tuple(AUDIO)
 
+
 def fit_model(data):
     X = design(data, predictors)
     return sm.WLS(data["skip_rate"], X, weights=data["n_plays"]).fit(cov_type="HC3")
+
 
 model_original = fit_model(original)
 model_filtered = fit_model(filtered)

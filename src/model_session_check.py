@@ -19,7 +19,13 @@ def main():
     df = df.loc[counts >= 5].copy()
 
     # Convert Boolean columns to integers
-    for col in ("skip_1", "skip_2", "skip_3", "hist_user_behavior_is_shuffle", "premium"):
+    for col in (
+        "skip_1",
+        "skip_2",
+        "skip_3",
+        "hist_user_behavior_is_shuffle",
+        "premium",
+    ):
         df[col] = df[col].astype(int)
 
     # Prepare track-context predictors
@@ -31,7 +37,7 @@ def main():
             prop_shuffle=("hist_user_behavior_is_shuffle", "mean"),
             prop_premium=("premium", "mean"),
             mean_position=("session_position", "mean"),
-            **{col: (col, "first") for col in track_cols}
+            **{col: (col, "first") for col in track_cols},
         )
         .dropna()
         .copy()
@@ -53,12 +59,7 @@ def main():
             "skip_2",
             "skip_3",
         ]
-    ].merge(
-        grouped,
-        on=["track_id_clean", "context_type"],
-        how="inner",
-        validate="m:1"
-    )
+    ].merge(grouped, on=["track_id_clean", "context_type"], how="inner", validate="m:1")
 
     # Build interaction model
     terms = list(AUDIO) + [
@@ -115,23 +116,29 @@ def main():
         # Feature-level Wald tests
         feature_results = []
         for feature in INTERACTIONS:
-            indices = [i for i, name in enumerate(names) if name.startswith(f"{feature}:")]
+            indices = [
+                i for i, name in enumerate(names) if name.startswith(f"{feature}:")
+            ]
             R = np.eye(len(names))[indices]
             p_track = float(track_fit.wald_test(R, scalar=True).pvalue)
             p_both = float(both_fit.wald_test(R, scalar=True).pvalue)
 
-            feature_results.append({
-                "outcome": outcome,
-                "feature": feature,
-                "R2": model.rsquared,
-                "joint_track_p": joint_track,
-                "joint_two_way_p": joint_both,
-                "track_p": p_track,
-                "two_way_p": p_both,
-            })
+            feature_results.append(
+                {
+                    "outcome": outcome,
+                    "feature": feature,
+                    "R2": model.rsquared,
+                    "joint_track_p": joint_track,
+                    "joint_two_way_p": joint_both,
+                    "track_p": p_track,
+                    "two_way_p": p_both,
+                }
+            )
 
         # FDR correction across the four feature tests
-        adjusted = multipletests([row["two_way_p"] for row in feature_results], method="fdr_bh")[1]
+        adjusted = multipletests(
+            [row["two_way_p"] for row in feature_results], method="fdr_bh"
+        )[1]
         print()
         print("=== Feature-Level Tests ===")
 
@@ -156,4 +163,5 @@ def main():
     print("Session dependence and robustness checks completed!")
 
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

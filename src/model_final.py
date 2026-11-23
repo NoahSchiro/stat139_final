@@ -16,7 +16,9 @@ def main():
 
     # Load and prepare Model B (selected model) data
     tracks = prepare_data()
-    tracks = tracks.loc[tracks["n_plays"] >= 5].dropna(subset=list(PREDICTORS) + ["skip_2_rate"])
+    tracks = tracks.loc[tracks["n_plays"] >= 5].dropna(
+        subset=list(PREDICTORS) + ["skip_2_rate"]
+    )
 
     x = design(tracks, PREDICTORS)
     y = tracks["skip_2_rate"]
@@ -70,23 +72,16 @@ def main():
     mask = np.ones(len(tracks), dtype=bool)
     mask[top[0]] = False
 
-    refit = sm.WLS(
-        y.iloc[mask],
-        x.iloc[mask],
-        weights=weights.iloc[mask]
-    ).fit(cov_type="HC3")
+    refit = sm.WLS(y.iloc[mask], x.iloc[mask], weights=weights.iloc[mask]).fit(
+        cov_type="HC3"
+    )
 
     print()
     print("=== Influence Sensitivity ===")
     print(f"Original R^2: {fit.rsquared:.4f}")
     print(f"Without top track R^2: {refit.rsquared:.4f}")
 
-    for feature in (
-        "bounciness",
-        "duration",
-        "speechiness",
-        "loudness"
-    ):
+    for feature in ("bounciness", "duration", "speechiness", "loudness"):
         print(
             f"{feature}: "
             f"original={fit.params[feature]:.4f}, "
@@ -122,4 +117,5 @@ def main():
     print("Saved final_model_diagnostics.png")
 
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

@@ -31,10 +31,7 @@ def prepare_data():
 
     for col in boolean_cols:
         df[col] = (
-            df[col]
-            .astype(str)
-            .str.lower()
-            .map({"true": 1, "false": 0, "1": 1, "0": 0})
+            df[col].astype(str).str.lower().map({"true": 1, "false": 0, "1": 1, "0": 0})
         )
 
     if df[boolean_cols].isna().any().any():
@@ -58,9 +55,7 @@ def prepare_data():
     tracks = df.groupby("track_id_clean").agg(**agg)
 
     # Context proportions, with user_collection as the reference
-    shares = pd.crosstab(
-        df["track_id_clean"], df["context_type"], normalize="index"
-    )
+    shares = pd.crosstab(df["track_id_clean"], df["context_type"], normalize="index")
     contexts = (
         "catalog",
         "editorial_playlist",

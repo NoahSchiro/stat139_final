@@ -10,9 +10,17 @@ ASSETS = Path("assets")
 
 # Model B (Selected Model): 11 retained audio features
 AUDIO = (
-    "acousticness", "bounciness", "energy", "flatness",
-    "instrumentalness", "liveness", "loudness",
-    "speechiness", "tempo", "valence", "duration"
+    "acousticness",
+    "bounciness",
+    "energy",
+    "flatness",
+    "instrumentalness",
+    "liveness",
+    "loudness",
+    "speechiness",
+    "tempo",
+    "valence",
+    "duration",
 )
 
 # Features tested for interactions
@@ -77,8 +85,7 @@ def main():
     # Weighted regression with track-clustered standard errors
     def fit(formula, data):
         return smf.wls(formula, data=data, weights=data["n_plays"]).fit(
-            cov_type="cluster",
-            cov_kwds={"groups": data["track_id_clean"]}
+            cov_type="cluster", cov_kwds={"groups": data["track_id_clean"]}
         )
 
     baseline = fit(base_formula, grouped)
@@ -110,11 +117,13 @@ def main():
     print(f"p-value: {float(test.pvalue):.4e}")
 
     # Step 2. Individual interaction coefficients
-    results = pd.DataFrame({
-        "coef": interaction.params[names],
-        "se": interaction.bse[names],
-        "p": interaction.pvalues[names],
-    })
+    results = pd.DataFrame(
+        {
+            "coef": interaction.params[names],
+            "se": interaction.bse[names],
+            "p": interaction.pvalues[names],
+        }
+    )
 
     results["p_fdr"] = multipletests(results["p"], method="fdr_bh")[1]
 
@@ -138,25 +147,25 @@ def main():
             estimate = interaction.t_test(contrast)
             lo, hi = estimate.conf_int()[0]
 
-            slopes.append({
-                "feature": feature,
-                "context": context,
-                "coef": float(np.asarray(estimate.effect).item()),
-                "lo": float(lo),
-                "hi": float(hi),
-                "p": float(np.asarray(estimate.pvalue).item()),
-            })
+            slopes.append(
+                {
+                    "feature": feature,
+                    "context": context,
+                    "coef": float(np.asarray(estimate.effect).item()),
+                    "lo": float(lo),
+                    "hi": float(hi),
+                    "p": float(np.asarray(estimate.pvalue).item()),
+                }
+            )
 
     slopes = pd.DataFrame(slopes)
 
     print()
     print("=== Context-Specific Audio Slopes ===")
     print(
-        slopes.pivot(
-            index="context",
-            columns="feature",
-            values="coef"
-        ).round(4).to_string()
+        slopes.pivot(index="context", columns="feature", values="coef")
+        .round(4)
+        .to_string()
     )
 
     slopes.to_csv(ASSETS / "context_audio_slopes.csv", index=False)
@@ -168,18 +177,22 @@ def main():
     feature_tests = []
 
     for feature in INTERACTIONS:
-        terms = [name for name in interaction.params.index if name.startswith(f"{feature}:")]
+        terms = [
+            name for name in interaction.params.index if name.startswith(f"{feature}:")
+        ]
         indices = [interaction.params.index.get_loc(name) for name in terms]
 
         R = np.eye(len(interaction.params))[indices]
         test = interaction.wald_test(R, scalar=True)
 
-        feature_tests.append({
-            "feature": feature,
-            "chi2": float(test.statistic),
-            "df": len(terms),
-            "p": float(test.pvalue),
-        })
+        feature_tests.append(
+            {
+                "feature": feature,
+                "chi2": float(test.statistic),
+                "df": len(terms),
+                "p": float(test.pvalue),
+            }
+        )
 
     feature_tests = pd.DataFrame(feature_tests)
 
@@ -195,10 +208,15 @@ def main():
         subset = slopes[slopes["feature"] == feature].sort_values("coef")
         y = np.arange(len(subset))
 
-        ax.errorbar(subset["coef"] * 100, y,
-            xerr=[(subset["coef"] - subset["lo"]) * 100, (subset["hi"] - subset["coef"]) * 100],
+        ax.errorbar(
+            subset["coef"] * 100,
+            y,
+            xerr=[
+                (subset["coef"] - subset["lo"]) * 100,
+                (subset["hi"] - subset["coef"]) * 100,
+            ],
             fmt="o",
-            capsize=4
+            capsize=4,
         )
 
         ax.set_yticks(y, subset["context"])
@@ -230,16 +248,18 @@ def main():
         R = np.eye(len(full_fit.params))[indices]
         test = full_fit.wald_test(R, scalar=True)
 
-        sensitivity.append({
-            "min_plays": threshold,
-            "observations": len(subset),
-            "tracks": subset["track_id_clean"].nunique(),
-            "R2_main": base_fit.rsquared,
-            "R2_interaction": full_fit.rsquared,
-            "delta_R2": full_fit.rsquared - base_fit.rsquared,
-            "chi2": float(test.statistic),
-            "p": float(test.pvalue),
-        })
+        sensitivity.append(
+            {
+                "min_plays": threshold,
+                "observations": len(subset),
+                "tracks": subset["track_id_clean"].nunique(),
+                "R2_main": base_fit.rsquared,
+                "R2_interaction": full_fit.rsquared,
+                "delta_R2": full_fit.rsquared - base_fit.rsquared,
+                "chi2": float(test.statistic),
+                "p": float(test.pvalue),
+            }
+        )
 
     sensitivity = pd.DataFrame(sensitivity)
     print(sensitivity.round(5).to_string(index=False))
@@ -248,4 +268,5 @@ def main():
     print("Phase 2 analyses completed!")
 
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

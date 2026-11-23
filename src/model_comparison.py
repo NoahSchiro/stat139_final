@@ -36,33 +36,34 @@ def main():
     results = []
 
     for name, selected in MODELS.items():
-        audio = tuple( ## Keep one rhythm feature and remove the other three. Also exclude mechanism and organism
-            f for f in AUDIO_FEATURES
-            if f not in {"mechanism", "organism"}
-            and (f not in RHYTHM or f == selected)
+        audio = tuple(  ## Keep one rhythm feature and remove the other three. Also exclude mechanism and organism
+            f
+            for f in AUDIO_FEATURES
+            if f not in {"mechanism", "organism"} and (f not in RHYTHM or f == selected)
         )
 
         fit = fit_wls(tracks, CONTROLS + audio)
         vif = vif_table(
-            design(tracks, CONTROLS + audio),
-            ASSETS / f"vif_{selected}.csv"
+            design(tracks, CONTROLS + audio), ASSETS / f"vif_{selected}.csv"
         )
 
         f_stat, p_value, _ = fit.compare_f_test(controls_only)
         _, p_drop, _ = original.compare_f_test(fit)
 
-        results.append({
-            "Model": name,
-            "R2": fit.rsquared,
-            "Adj_R2": fit.rsquared_adj,
-            "AIC": fit.aic,
-            "Max_VIF": vif.max(),
-            "Audio_F": f_stat,
-            "Audio_p": p_value,
-            "Removed_Features_p": p_drop,
-            "Rhythm_Coef": fit.params[selected],
-            "Rhythm_p": fit.pvalues[selected],
-        })
+        results.append(
+            {
+                "Model": name,
+                "R2": fit.rsquared,
+                "Adj_R2": fit.rsquared_adj,
+                "AIC": fit.aic,
+                "Max_VIF": vif.max(),
+                "Audio_F": f_stat,
+                "Audio_p": p_value,
+                "Removed_Features_p": p_drop,
+                "Rhythm_Coef": fit.params[selected],
+                "Rhythm_p": fit.pvalues[selected],
+            }
+        )
 
     comparison = pd.DataFrame(results).set_index("Model")
 
@@ -81,4 +82,5 @@ def main():
     print("Saved assets/model_comparison.csv")
 
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()
